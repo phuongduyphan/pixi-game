@@ -1,4 +1,4 @@
-<template>
+MovementSprite<template>
   <div id="pixi-container">
   </div>
 </template>
@@ -7,6 +7,10 @@
 import { defineComponent } from 'vue';
 import * as PIXI from 'pixi.js';
 import { randomInt } from './utils';
+import { LineWithAngle, MovementSprite } from './types';
+import { keyboard } from './keyboard';
+import { contain } from './contain';
+import { rotateAroundPoint } from './rotateAroundPoint';
 
 export default defineComponent({
   name: 'App',
@@ -15,8 +19,8 @@ export default defineComponent({
       renderer: PIXI.autoDetectRenderer({
         width: window.innerWidth,
         height: window.innerHeight,
-        backgroundColor: 0x000000,
-        antialias: false,
+        backgroundColor: 0xffffff,
+        antialias: true,
         transparent: false,
         resolution: 1
       }),
@@ -41,10 +45,13 @@ export default defineComponent({
       (this.loader as PIXI.Loader)
         .add('bunny', './bunny.png')
         .add('man', './man.png')
-        .add('girl', './pixie96x48.png')
+        .add('pixie', './pixie96x48.png')
         .add('cat', './cat64x64.png')
+        .add('hedgehog', './hedgehog.png')
+        .add('tiger', './tiger.png')
         .add('tileset', './tileset.png')
         .add('treasureHunter', './treasureHunter.json')
+        .add('./fonts/disko.xml')
 
       this.loader.onProgress.add((loader, resource) => {
         console.log(`loading: ${resource.url}`);
@@ -54,23 +61,27 @@ export default defineComponent({
     render () {
       const sprites: { [key: string]: PIXI.Sprite } = {};
       this.loader.load((loader, resources) => {
-        // this.renderGirl(resources.girl.texture!);
+        // this.renderGirl(resources.pixie.texture!);
         // this.renderCat(resources.cat.texture!);
         // this.extractSpriteFromSpritesheet(resources.tileset.texture!);
-        this.extractSpriteFromSpritesheetJson(resources.treasureHunter);
+        // this.extractSpriteFromSpritesheetJson(resources.treasureHunter);
+        // this.drawShape();
+        // this.drawText();
+        this.groupingSprites(resources);
 
         this.renderer.render(this.stage);
       });
     },
-    renderGirl (girlTexture: PIXI.Texture) {
+    renderGirl (girlTexture: PIXI.Texture): PIXI.Sprite {
       const girl = new PIXI.Sprite(girlTexture);
       this.stage.addChild(girl);
-      // stage.removeChild(sprites.girl);
-      // sprites.girl.visible = false;
+      return girl;
+      // stage.removeChild(sprites.pixie);
+      // sprites.pixie.visible = false;
       // The only time you’ll ever have to use destroy is in extreme cases in which
       // your game is creating and destroying a lot of sprites, and you notice unusually high GPU
       // memory usage.
-      // sprites.girl.destroy(true); // destroy texture and base texture
+      // sprites.pixie.destroy(true); // destroy texture and base texture
     },
     renderCat (catTexture: PIXI.Texture) {
       const cat = new PIXI.Sprite(catTexture);
@@ -129,6 +140,247 @@ export default defineComponent({
         this.stage.addChild(blob);
       }
 
+    },
+    drawShape () {
+      const rectangle = new PIXI.Graphics();
+      rectangle.beginFill(0x0033cc);
+      rectangle.lineStyle(4, 0xff0000, 1);
+      rectangle.drawRect(0, 0, 96, 96);
+      // rectangle.drawRoundedRect(0, 0, 96, 96, 12);
+      rectangle.endFill();
+      rectangle.x = 64;
+      rectangle.y = 64;
+      rectangle.alpha = 0.5;
+      this.stage.addChild(rectangle);
+
+      const circle = new PIXI.Graphics();
+      circle.beginFill(0xff9933);
+      circle.lineStyle(4, 0x006600, 1);
+      circle.drawCircle(0, 0, 48);
+      circle.endFill();
+      circle.x = 256;
+      circle.y = 112;
+      this.stage.addChild(circle);
+
+      const ellipse = new PIXI.Graphics();
+      ellipse.beginFill(0xffff00);
+      ellipse.lineStyle(4, 0x000000, 1);
+      ellipse.drawEllipse(0, 0, 64, 32);
+      ellipse.endFill();
+      ellipse.x = 416;
+      ellipse.y = 112;
+      this.stage.addChild(ellipse);
+
+      const line = new PIXI.Graphics();
+      line.lineStyle(4, 0x000000, 1);
+      line.moveTo(0, 0);
+      line.lineTo(100, 50);
+      line.x = 64;
+      line.y = 512;
+      this.stage.addChild(line);
+
+      const triangle = new PIXI.Graphics();
+      triangle.beginFill(0xff3300);
+      triangle.lineStyle(4, 0x336699, 1);
+      triangle.moveTo(0, 0);
+      triangle.lineTo(-64, 64);
+      triangle.lineTo(64, 64);
+      triangle.lineTo(0, 0);
+      triangle.endFill();
+
+      triangle.x = 320;
+      triangle.y = 192;
+      this.stage.addChild(triangle);
+
+      const quadLine = new PIXI.Graphics();
+      quadLine.lineStyle(4, 0x000000, 1);
+      quadLine.moveTo(32, 128);
+      quadLine.quadraticCurveTo(128, 20, 224, 128);
+      quadLine.y = 128;
+      this.stage.addChild(quadLine);
+
+      const bezierLine = new PIXI.Graphics();
+      bezierLine.lineStyle(4, 0x000000, 1);
+      bezierLine.moveTo(32, 128);
+      bezierLine.bezierCurveTo(32, 20, 224, 20, 224, 128);
+      this.stage.addChild(bezierLine);
+      bezierLine.x = 256;
+      bezierLine.y = 256;
+
+      const partialCircle = new PIXI.Graphics();
+      partialCircle.lineStyle(4, 0x000000, 1);
+      partialCircle.arc(64, 64, 64, 3.14, 5, false);
+      partialCircle.x = 64;
+      partialCircle.y = 416;
+      this.stage.addChild(partialCircle);
+    },
+    drawText () {
+      // const message = new PIXI.Text("Hello Pixi!", { fontFamily: "Arial", fontSize: 48, fill: "red" });
+      // message.x = this.renderer.view.width / 2 - message.width / 2;
+      // message.y = this.renderer.view.height / 2 - message.height / 2;
+      // this.stage.addChild(message);
+
+      const bitmapMsg = new PIXI.BitmapText("Hello Pixi!", { fontName: 'disko', fontSize: 48 });
+      bitmapMsg.x = this.renderer.view.width / 2 - bitmapMsg.width / 2;
+      bitmapMsg.y = this.renderer.view.height / 2 - bitmapMsg.height / 2;
+      this.stage.addChild(bitmapMsg);
+    },
+    renderGame () {
+      this.loader.load((loader, resources) => {
+        const pixie: MovementSprite = this.renderGirl(resources.pixie.texture!);
+        pixie.x = this.renderer.view.width / 2 - pixie.width / 2;
+        pixie.y = this.renderer.view.height / 2 - pixie.height / 2;
+
+        pixie.vx = 0;
+        pixie.vy = 0;
+        pixie.accelerationX = 0;
+        pixie.accelerationY = 0;
+        pixie.frictionX = 1;
+        pixie.frictionY = 1;
+        pixie.speed = 0.2;
+        pixie.drag = 0.98;
+
+        const left = keyboard(37),
+          up = keyboard(38),
+          right = keyboard(39),
+          down = keyboard(40);
+
+        left.press = () => {
+          pixie.accelerationX = -pixie.speed!;
+          pixie.frictionX = 1;
+        }
+
+        left.release = () => {
+          if (!right.isDown) {
+            pixie.accelerationX = 0;
+            pixie.frictionX = pixie.drag;
+          }
+        }
+
+        up.press = () => {
+          pixie.accelerationY = -pixie.speed!;
+          pixie.frictionY = 1;
+        }
+
+        up.release = () => {
+          if (!down.isDown) {
+            pixie.accelerationY = 0;
+            pixie.frictionY = pixie.drag;
+          }
+        };
+        //Right
+        right.press = () => {
+          pixie.accelerationX = pixie.speed;
+          pixie.frictionX = 1;
+        };
+        right.release = () => {
+          if (!left.isDown) {
+            pixie.accelerationX = 0;
+            pixie.frictionX = pixie.drag;
+          }
+        };
+        //Down
+        down.press = () => {
+          pixie.accelerationY = pixie.speed;
+          pixie.frictionY = 1;
+        };
+        down.release = () => {
+          if (!up.isDown) {
+            pixie.accelerationY = 0;
+            pixie.frictionY = pixie.drag;
+          }
+        };
+
+        const play = () => {
+          //Apply acceleration by adding the acceleration to the sprite's velocity
+          pixie.vx! += pixie.accelerationX!;
+          pixie.vy! += pixie.accelerationY!;
+          //Apply friction by multiplying sprite's velocity by the friction
+          pixie.vx! *= pixie.frictionX!;
+          pixie.vy! *= pixie.frictionY!;
+
+          //Apply the velocity to the sprite's position to make it move
+          pixie.x += pixie.vx!;
+          pixie.y += pixie.vy!;
+
+          const collision = contain(pixie, { x: 0, y: 0, width: this.renderer.view.width, height: this.renderer.view.height });
+
+          //Check for a collision. If the value of `collision` isn't
+          //`undefined` then you know the sprite hit a boundary
+          if (collision) {
+            //Reverse the sprite's `vx` value if it hits the left or right
+            if (collision.has("left") || collision.has("right")) {
+              pixie.vx = -pixie.vx!;
+            }
+            //Reverse the sprite's `vy` value if it hits the top or bottom
+            if (collision.has("top") || collision.has("bottom")) {
+              pixie.vy = -pixie.vy!;
+            }
+          }
+        }
+
+        const state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
+    },
+    renderRotatingLine () {
+      this.loader.load((loader, resources) => {
+        const line: LineWithAngle = new PIXI.Graphics();
+        this.stage.addChild(line);
+        line.angleA = 0;
+        line.angleB = 0;
+
+        const play = () => {
+          //Make the line's start point rotate clockwise around x/y point 64, 64
+          line.angleA! += 0.02;
+          let rotatingA = rotateAroundPoint(64, 64, 20, 20, line.angleA!);
+          //Make the line's end point rotate counter-clockwise
+          //around x/y point 192, 208
+          line.angleB! -= 0.03;
+          let rotatingB = rotateAroundPoint(192, 208, 20, 20, line.angleB!);
+          //Clear the line to reset it from the previous frame
+          line.clear();
+          //Draw the line using the rotating points as start and end points
+          line.lineStyle(4, 0x000000, 1);
+          line.moveTo(rotatingA.x, rotatingA.y);
+          line.lineTo(rotatingB.x, rotatingB.y);
+
+        }
+
+        const state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
+    },
+    groupingSprites (resources: PIXI.utils.Dict<PIXI.LoaderResource>) {
+      const cat = new PIXI.Sprite(resources.cat.texture);
+      cat.position.set(0, 0);
+      const hedgehog = new PIXI.Sprite(resources.hedgehog.texture);
+      hedgehog.position.set(32, 32);
+      const tiger = new PIXI.Sprite(resources.tiger.texture);
+      tiger.position.set(64, 64);
+
+      const animals = new PIXI.Container();
+      animals.addChild(cat);
+      animals.addChild(hedgehog);
+      animals.addChild(tiger);
+      // console.log(animals.children);
+      animals.position.set(96, 96);
+
+      this.stage.addChild(animals);
     },
     onWindowResize () {
       window.addEventListener('resize', () => {
