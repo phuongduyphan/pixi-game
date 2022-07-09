@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 
-export interface MovementSprite extends PIXI.Sprite {
+export interface MovingSprite extends PIXI.Sprite {
   vx?: number;
   vy?: number;
   accelerationX?: number;

@@ -1,4 +1,4 @@
-MovementSprite<template>
+MovingSpriteMovingSprite<template>
   <div id="pixi-container">
   </div>
 </template>
@@ -7,10 +7,11 @@ MovementSprite<template>
 import { defineComponent } from 'vue';
 import * as PIXI from 'pixi.js';
 import { randomInt } from './utils';
-import { LineWithAngle, MovementSprite } from './types';
+import { LineWithAngle, MovingSprite } from './types';
 import { keyboard } from './keyboard';
 import { contain } from './contain';
 import { rotateAroundPoint } from './rotateAroundPoint';
+import { Bump } from './bump';
 
 export default defineComponent({
   name: 'App',
@@ -19,7 +20,7 @@ export default defineComponent({
       renderer: PIXI.autoDetectRenderer({
         width: window.innerWidth,
         height: window.innerHeight,
-        backgroundColor: 0xffffff,
+        backgroundColor: 0x000000,
         antialias: true,
         transparent: false,
         resolution: 1
@@ -227,7 +228,7 @@ export default defineComponent({
     },
     renderGame () {
       this.loader.load((loader, resources) => {
-        const pixie: MovementSprite = this.renderGirl(resources.pixie.texture!);
+        const pixie: MovingSprite = this.renderGirl(resources.pixie.texture!);
         pixie.x = this.renderer.view.width / 2 - pixie.width / 2;
         pixie.y = this.renderer.view.height / 2 - pixie.height / 2;
 
@@ -388,11 +389,194 @@ export default defineComponent({
         this.renderer.view.height = window.innerHeight;
         this.render();
       });
+    },
+    renderTreasureHunterGame () {
+      this.loader.load((loader, resources) => {
+        const b = new Bump(PIXI);
+        // Game Scene
+        const gameScene = new PIXI.Container();
+        this.stage.addChild(gameScene);
+
+        const textureCache = PIXI.utils.TextureCache;
+        const dungeon = new PIXI.Sprite(textureCache['dungeon.png']);
+        gameScene.addChild(dungeon);
+
+        const door = new PIXI.Sprite(textureCache['door.png']);
+        door.position.set(32, 0);
+        gameScene.addChild(door);
+
+        const explorer: MovingSprite = new PIXI.Sprite(textureCache['explorer.png']);
+        explorer.x = 68;
+        explorer.y = this.stage.height / 2 - explorer.height / 2;
+        explorer.vx = 0;
+        explorer.vy = 0;
+        gameScene.addChild(explorer);
+
+        const left = keyboard(37),
+          up = keyboard(38),
+          right = keyboard(39),
+          down = keyboard(40);
+
+        left.press = () => {
+          explorer.vx = -5;
+          explorer.vy = 0;
+        }
+
+        left.release = () => {
+          if (!right.isDown && explorer.vy === 0) {
+            explorer.vx = 0;
+          }
+        }
+
+        up.press = () => {
+          explorer.vy = -5;
+          explorer.vx = 0;
+        }
+
+        up.release = () => {
+          if (!down.isDown && explorer.vx === 0) {
+            explorer.vy = 0;
+          }
+        };
+        //Right
+        right.press = () => {
+          explorer.vx = 5;
+          explorer.vy = 0;
+        };
+        right.release = () => {
+          if (!left.isDown && explorer.vy === 0) {
+            explorer.vx = 0;
+          }
+        };
+        //Down
+        down.press = () => {
+          explorer.vy = 5;
+          explorer.vx = 0;
+        };
+        down.release = () => {
+          if (!up.isDown && explorer.vx === 0) {
+            explorer.vy = 0;
+          }
+        };
+
+        const treasure = new PIXI.Sprite(textureCache['treasure.png']);
+        treasure.x = gameScene.width - treasure.width - 48;
+        treasure.y = gameScene.height / 2 - treasure.height / 2;
+        gameScene.addChild(treasure);
+
+        const numberOfBlobs = 6,
+          spacing = 48,
+          xOffset = 150,
+          speed = 2;
+        let direction = 1;
+
+        const blobs: MovingSprite[] = [];
+
+        for (let i = 0; i < numberOfBlobs; i += 1) {
+          const blob: MovingSprite = new PIXI.Sprite(textureCache['blob.png']);
+          const x = spacing * i + xOffset;
+          const y = randomInt(0, this.stage.height - blob.height);
+          blob.x = x;
+          blob.y = y;
+          blob.vy = speed * direction;
+          direction *= -1;
+          blobs.push(blob);
+          gameScene.addChild(blob);
+        }
+
+        // healthbar
+        const healthbar: PIXI.Container & { outer?: PIXI.Graphics } = new PIXI.Container();
+        healthbar.position.set(this.stage.width - 170, 4);
+        gameScene.addChild(healthbar);
+
+        const innerBar = new PIXI.Graphics();
+        innerBar.beginFill(0x000000);
+        innerBar.drawRect(0, 0, 128, 8);
+        innerBar.endFill();
+        healthbar.addChild(innerBar);
+
+        const outerBar = new PIXI.Graphics();
+        outerBar.beginFill(0xff3300);
+        outerBar.drawRect(0, 0, 128, 8);
+        outerBar.endFill();
+        healthbar.addChild(outerBar);
+        healthbar.outer = outerBar;
+
+        // GameOver Scene
+        const gameOverScene = new PIXI.Container();
+        this.stage.addChild(gameOverScene);
+        gameOverScene.visible = false;
+
+        const message = new PIXI.Text('The End!', { fontFamily: 'Arial', fontSize: 48, fill: 'red' });
+        message.x = 120;
+        message.y = this.stage.height / 2 - 32;
+        gameOverScene.addChild(message);
+
+
+        // Game loop
+        const play = () => {
+          explorer.x += explorer.vx!;
+          explorer.y += explorer.vy!;
+
+          contain(explorer, { x: 28, y: 10, width: 488, height: 480 });
+          let explorerHit = false;
+
+          blobs.forEach(blob => {
+            blob.y += blob.vy!;
+            const blobHitsWall = contain(blob, { x: 28, y: 10, width: 488, height: 480 });
+            if (blobHitsWall) {
+              if (blobHitsWall.has('top') || blobHitsWall.has('bottom')) {
+                blob.vy! *= -1;
+              }
+            }
+            if (b.hitTestRectangle(explorer, blob)) {
+              explorerHit = true;
+            }
+          });
+
+          if (explorerHit) {
+            explorer.alpha = 0.5;
+            healthbar.outer!.width -= 1;
+          } else {
+            explorer.alpha = 1;
+          }
+
+          if (b.hitTestRectangle(explorer, treasure)) {
+            treasure.x = explorer.x + 8;
+            treasure.y = explorer.y + 8;
+          }
+
+          if (b.hitTestRectangle(treasure, door)) {
+            state = end;
+            message.text = "You won!";
+          }
+
+          if (healthbar.outer!.width < 0) {
+            state = end;
+            message.text = "You lost!";
+          }
+        }
+
+        let state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          this.renderer.render(this.stage);
+        }
+
+        const end = () => {
+          gameScene.visible = false;
+          gameOverScene.visible = true;
+        };
+
+        gameLoop();
+      });
     }
   },
   mounted () {
     this.loadPixi();
-    this.render();
+    this.renderTreasureHunterGame();
     this.onWindowResize();
   }
 })
