@@ -12,6 +12,11 @@
   resolved "https://registry.yarnpkg.com/@pixi/accessibility/-/accessibility-6.4.2.tgz#612d64d14b1eee4314fead64c7916c96953b2f39"
   integrity sha512-8fGPff10+vQuEfhQhOF/d/O3B3tpZvZRDUB6E8H+HAreV3S7PWk1WvC82/Q3Ru9u78M4y6zWvb0GQVT/h5JG9g==
 
+"@pixi/animate@^2.0.2":
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/@pixi/animate/-/animate-2.0.2.tgz#9f8ff851a838b26516d9f2e0dfa67e445d48c585"
+  integrity sha512-IQfZr+g5RkTCqCwQiTyigC6q0+Dl9lXYXf8BsmiF64uH0Bag1qiBE03Pf/B+5+MBqEur6Tnid/z4LvzYX/eGyg==
+
 "@pixi/app@6.4.2":
   version "6.4.2"
   resolved "https://registry.yarnpkg.com/@pixi/app/-/app-6.4.2.tgz#d24e1fe4cb415e8dd7f2fd26a8e59969debee3ca"

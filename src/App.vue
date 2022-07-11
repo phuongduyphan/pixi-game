@@ -12,6 +12,8 @@ import { keyboard } from './keyboard';
 import { contain } from './contain';
 import { rotateAroundPoint } from './rotateAroundPoint';
 import { Bump } from './bump';
+import { SpriteUtilities } from './spriteUtilities';
+import { Dust } from './dust';
 
 export default defineComponent({
   name: 'App',
@@ -53,6 +55,9 @@ export default defineComponent({
         .add('tileset', './tileset.png')
         .add('treasureHunter', './treasureHunter.json')
         .add('./fonts/disko.xml')
+        .add('./pixieFrames.png')
+        .add('./adventuress.png')
+        .add('./star.png')
 
       this.loader.onProgress.add((loader, resource) => {
         console.log(`loading: ${resource.url}`);
@@ -572,11 +577,290 @@ export default defineComponent({
 
         gameLoop();
       });
+    },
+    renderFilmStrip () {
+      this.loader.load((loader, resources) => {
+        const su = new SpriteUtilities(PIXI);
+        const frames = su.filmstrip('./pixieFrames.png', 48, 32);
+        const pixie = new PIXI.AnimatedSprite(frames);
+        pixie.position.set(32, 32);
+        this.stage.addChild(pixie);
+
+        pixie.play();
+        pixie.animationSpeed = 0.1;
+
+        const d = new Dust(PIXI);
+        const stars = d.create(
+          128,
+          128,
+          () => su.sprite('./star.png'),
+          this.stage,
+          50
+        );
+
+        // Game loop
+        const play = () => {
+
+        }
+
+        let state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          d.update();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
+    },
+    renderTreasureHunterGameMovementExplorer () {
+      this.loader.load((loader, resources) => {
+        const b = new Bump(PIXI);
+        // Game Scene
+        const gameScene = new PIXI.Container();
+        this.stage.addChild(gameScene);
+
+        const textureCache = PIXI.utils.TextureCache;
+        const dungeon = new PIXI.Sprite(textureCache['dungeon.png']);
+        gameScene.addChild(dungeon);
+
+        const door = new PIXI.Sprite(textureCache['door.png']);
+        door.position.set(32, 0);
+        gameScene.addChild(door);
+
+        const su = new SpriteUtilities(PIXI);
+        const frames = su.filmstrip('./adventuress.png', 32, 32);
+        const adventuress = su.sprite(frames);
+        adventuress.vx = 0;
+        adventuress.vy = 0;
+        adventuress.position.set(32, 32);
+        gameScene.addChild(adventuress);
+        adventuress.fps = 12;
+
+        adventuress.states = {
+          down: 0,
+          left: 3,
+          right: 6,
+          up: 9,
+          walkDown: [0, 2],
+          walkLeft: [3, 5],
+          walkRight: [6, 8],
+          walkUp: [9, 11]
+        };
+
+        const left = keyboard(37),
+          up = keyboard(38),
+          right = keyboard(39),
+          down = keyboard(40);
+
+        left.press = () => {
+          //Play the sprite's `walkLeft` animation
+          //sequence and set the sprite's velocity
+          adventuress.playAnimation(adventuress.states.walkLeft);
+          adventuress.vx = -5;
+          adventuress.vy = 0;
+        }
+
+        left.release = () => {
+          //If the left arrow has been released, and the right arrow isn't down,
+          //and the sprite isn't moving vertically, stop the sprite from moving
+          //by setting its velocity to zero. Then display the sprite's static
+          //`left` state.
+          if (!right.isDown && adventuress.vy === 0) {
+            adventuress.vx = 0;
+            adventuress.show(adventuress.states.left);
+          }
+        }
+
+        up.press = () => {
+          adventuress.playAnimation(adventuress.states.walkUp);
+          adventuress.vy = -5;
+          adventuress.vx = 0;
+        }
+
+        up.release = () => {
+          if (!down.isDown && adventuress.vx === 0) {
+            adventuress.vy = 0;
+            adventuress.show(adventuress.states.up);
+          }
+        };
+        //Right
+        right.press = () => {
+          adventuress.playAnimation(adventuress.states.walkRight);
+          adventuress.vx = 5;
+          adventuress.vy = 0;
+        };
+        right.release = () => {
+          if (!left.isDown && adventuress.vy === 0) {
+            adventuress.vx = 0;
+            adventuress.show(adventuress.states.right);
+          }
+        };
+        //Down
+        down.press = () => {
+          adventuress.playAnimation(adventuress.states.walkDown);
+          adventuress.vy = 5;
+          adventuress.vx = 0;
+        };
+        down.release = () => {
+          if (!up.isDown && adventuress.vx === 0) {
+            adventuress.vy = 0;
+            adventuress.show(adventuress.states.down);
+          }
+        };
+
+        const treasure = new PIXI.Sprite(textureCache['treasure.png']);
+        treasure.x = gameScene.width - treasure.width - 48;
+        treasure.y = gameScene.height / 2 - treasure.height / 2;
+        gameScene.addChild(treasure);
+
+        const numberOfBlobs = 6,
+          spacing = 48,
+          xOffset = 150,
+          speed = 2;
+        let direction = 1;
+
+        const blobs: MovingSprite[] = [];
+
+        for (let i = 0; i < numberOfBlobs; i += 1) {
+          const blob: MovingSprite = new PIXI.Sprite(textureCache['blob.png']);
+          const x = spacing * i + xOffset;
+          const y = randomInt(0, this.stage.height - blob.height);
+          blob.x = x;
+          blob.y = y;
+          blob.vy = speed * direction;
+          direction *= -1;
+          blobs.push(blob);
+          gameScene.addChild(blob);
+        }
+
+        // healthbar
+        const healthbar: PIXI.Container & { outer?: PIXI.Graphics } = new PIXI.Container();
+        healthbar.position.set(this.stage.width - 170, 4);
+        gameScene.addChild(healthbar);
+
+        const innerBar = new PIXI.Graphics();
+        innerBar.beginFill(0x000000);
+        innerBar.drawRect(0, 0, 128, 8);
+        innerBar.endFill();
+        healthbar.addChild(innerBar);
+
+        const outerBar = new PIXI.Graphics();
+        outerBar.beginFill(0xff3300);
+        outerBar.drawRect(0, 0, 128, 8);
+        outerBar.endFill();
+        healthbar.addChild(outerBar);
+        healthbar.outer = outerBar;
+
+        // GameOver Scene
+        const d = new Dust(PIXI);
+        const gameOverScene = new PIXI.Container();
+        this.stage.addChild(gameOverScene);
+        gameOverScene.visible = false;
+
+        const message = new PIXI.Text('The End!', { fontFamily: 'Arial', fontSize: 48, fill: 'red' });
+        message.x = 120;
+        message.y = this.stage.height / 2 - 32;
+        gameOverScene.addChild(message);
+
+
+        // Game loop
+        const play = () => {
+          adventuress.x += adventuress.vx;
+          adventuress.y += adventuress.vy;
+
+          contain(adventuress, { x: 28, y: 10, width: 488, height: 480 });
+          let explorerHit = false;
+
+          blobs.forEach(blob => {
+            blob.y += blob.vy!;
+            const blobHitsWall = contain(blob, { x: 28, y: 10, width: 488, height: 480 });
+            if (blobHitsWall) {
+              if (blobHitsWall.has('top') || blobHitsWall.has('bottom')) {
+                blob.vy! *= -1;
+              }
+            }
+            if (b.hitTestRectangle(adventuress, blob)) {
+              explorerHit = true;
+            }
+          });
+
+          if (explorerHit) {
+            adventuress.alpha = 0.5;
+            healthbar.outer!.width -= 1;
+          } else {
+            adventuress.alpha = 1;
+          }
+
+          if (b.hitTestRectangle(adventuress, treasure)) {
+            treasure.x = adventuress.x + 8;
+            treasure.y = adventuress.y + 8;
+          }
+
+          if (b.hitTestRectangle(treasure, door)) {
+            state = end;
+            message.text = "You won!";
+            // star particles
+            let stars = new PIXI.ParticleContainer(
+              15000,
+              {
+                alpha: true,
+                scale: true,
+                rotation: true,
+                uvs: true
+              }
+            );
+            stars.position.set(this.stage.width / 2 - stars.width / 2, this.stage.height / 2 - stars.height / 2);
+            gameOverScene.addChild(stars);
+
+            //Create star particles
+            const particleStream: any = d.emitter(
+              500,
+              () => d.create(
+                0, 0,
+                () => su.sprite("./star.png"),
+                stars,
+                30,
+                0.1,
+                false,
+                3.14, 6.28,
+                16, 32,
+                2, 5
+              )
+            );
+
+            particleStream.play();
+          }
+
+          if (healthbar.outer!.width < 0) {
+            state = end;
+            message.text = "You lost!";
+          }
+        }
+
+        let state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          d.update();
+          this.renderer.render(this.stage);
+        }
+
+        const end = () => {
+          gameScene.visible = false;
+          gameOverScene.visible = true;
+        };
+
+        gameLoop();
+      });
     }
   },
   mounted () {
     this.loadPixi();
-    this.renderTreasureHunterGame();
+    this.renderTreasureHunterGameMovementExplorer();
     this.onWindowResize();
   }
 })
