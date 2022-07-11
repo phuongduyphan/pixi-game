@@ -58,6 +58,9 @@ export default defineComponent({
         .add('./pixieFrames.png')
         .add('./adventuress.png')
         .add('./star.png')
+        .add('./tile.png')
+        .add('./clouds.png')
+        .add('./snake.png')
 
       this.loader.onProgress.add((loader, resource) => {
         console.log(`loading: ${resource.url}`);
@@ -907,11 +910,223 @@ export default defineComponent({
       }
 
       gameLoop();
+    },
+    visualEffectsAndTransitions () {
+      this.loader.load((loader, resources) => {
+        const tilingSprite = new PIXI.TilingSprite(PIXI.utils.TextureCache['./tile.png'], 192, 192);
+        tilingSprite.x = 32;
+        tilingSprite.y = 32;
+        // tilingSprite.tilePosition.x = 32;
+        // tilingSprite.tilePosition.y = 32;
+        this.stage.addChild(tilingSprite);
+
+        const play = () => {
+
+        }
+
+        const state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
+    },
+    parallaxScrolling () {
+      this.loader.load((loader, resources) => {
+        const clouds = new PIXI.TilingSprite(PIXI.utils.TextureCache['./clouds.png'], 800, 800);
+        this.stage.addChild(clouds);
+
+        const play = () => {
+          clouds.tilePosition.x -= 1;
+        }
+
+        const state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
+    },
+    renderTexture () {
+      this.loader.load((loader, resources) => {
+        const spriteOne = new PIXI.TilingSprite(PIXI.utils.TextureCache['./tile.png'], 128, 128);
+        spriteOne.position.set(16, 16);
+        this.stage.addChild(spriteOne);
+
+        const rTexture = PIXI.RenderTexture.create({ width: 128, height: 128 });
+        const spriteTwo = new PIXI.Sprite(rTexture);
+        spriteTwo.position.set(108, 108);
+        this.stage.addChild(spriteTwo);
+
+
+        const play = () => {
+          spriteOne.tilePosition.x += 1;
+          spriteOne.tilePosition.y += 1;
+          this.renderer.render(spriteOne, { renderTexture: rTexture });
+        }
+
+        const state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
+    },
+    tinting () {
+      this.loader.load((loader, resources) => {
+        const cat = new PIXI.Sprite(resources.cat.texture);
+        cat.position.set(0, 0);
+        cat.tint = 0xffff660;
+        const hedgehog = new PIXI.Sprite(resources.hedgehog.texture);
+        hedgehog.position.set(32, 32);
+        hedgehog.tint = 0xff6666;
+        const tiger = new PIXI.Sprite(resources.tiger.texture);
+        tiger.position.set(64, 64);
+        tiger.tint = 0x66ff66;
+
+        const animals = new PIXI.Container();
+        animals.addChild(cat);
+        animals.addChild(hedgehog);
+        animals.addChild(tiger);
+        // console.log(animals.children);
+        animals.position.set(96, 96);
+
+        this.stage.addChild(animals);
+
+
+        const play = () => {
+        }
+
+        const state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
+    },
+    blendModes () {
+      this.loader.load((loader, resources) => {
+        this.renderer.backgroundColor = 0xffffff;
+        const cat = new PIXI.Sprite(resources.cat.texture);
+        cat.position.set(32, 32);
+        cat.scale.set(2, 2);
+        cat.alpha = 0.5;
+        cat.blendMode = PIXI.BLEND_MODES.MULTIPLY;
+        this.stage.addChild(cat);
+
+
+        const hedgehog = new PIXI.Sprite(resources.hedgehog.texture);
+        hedgehog.position.set(64, 64);
+        hedgehog.scale.set(2, 2);
+        hedgehog.alpha = 0.5;
+        hedgehog.blendMode = PIXI.BLEND_MODES.MULTIPLY;
+        this.stage.addChild(hedgehog);
+
+        const tiger = new PIXI.Sprite(resources.tiger.texture);
+        tiger.position.set(96, 96);
+        tiger.scale.set(2, 2);
+        tiger.alpha = 0.5;
+        tiger.blendMode = PIXI.BLEND_MODES.MULTIPLY;
+        this.stage.addChild(tiger);
+
+        const play = () => {
+        }
+
+        const state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
+    },
+    filters () {
+      this.loader.load((loader, resources) => {
+        const cat = new PIXI.Sprite(resources.cat.texture);
+        cat.position.set(64, 64);
+        cat.scale.set(2, 2);
+        this.stage.addChild(cat);
+
+        const filter = new PIXI.filters.BlurFilter();
+        filter.blur = 20;
+        cat.filters = [filter];
+
+        const play = () => {
+        }
+
+        const state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
+    },
+    ropeMesh () {
+      this.loader.load((loader, resources) => {
+        const numberOfSegments = 20;
+        const imageWidth = 600;
+        const ropeSegment = imageWidth / numberOfSegments;
+
+        const points: PIXI.Point[] = [];
+        for (let i = 0; i < numberOfSegments; i += 1) {
+          points.push(new PIXI.Point(i * ropeSegment, 0));
+        }
+
+        const snake = new PIXI.SimpleRope(PIXI.utils.TextureCache['./snake.png'], points);
+        const snakeContainer = new PIXI.Container();
+        snakeContainer.addChild(snake);
+        snakeContainer.position.set(64, 128);
+        this.stage.addChild(snakeContainer);
+
+        let counter = 0;
+
+        const play = () => {
+          counter += 0.1;
+
+          for (let i = 0; i < points.length; i += 1) {
+            points[i].y = (Math.sin(i * 0.5) + counter) * 30;
+            points[i].x = i * ropeSegment + Math.cos((i * 0.3) + counter) * numberOfSegments;
+          }
+        }
+
+        const state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
     }
   },
   mounted () {
     this.loadPixi();
-    this.nodeTransition();
+    this.ropeMesh();
     this.onWindowResize();
   }
 })
