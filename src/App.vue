@@ -831,6 +831,7 @@ export default defineComponent({
               )
             );
 
+            particleStream.stop();
             particleStream.play();
           }
 
@@ -856,11 +857,61 @@ export default defineComponent({
 
         gameLoop();
       });
+    },
+    nodeTransition () {
+      const drawCircle = (radius: number, color: number) => {
+        const circle: PIXI.Graphics & { radius?: number, color?: number } = new PIXI.Graphics();
+        circle.beginFill(color);
+        // circle.lineStyle(4, 0x006600, 1);
+        circle.drawCircle(0, 0, radius);
+        circle.endFill();
+        circle.x = 256;
+        circle.y = 112;
+        this.stage.addChild(circle);
+        circle.radius = radius;
+        circle.color = color;
+        return circle;
+      }
+
+      let circle = drawCircle(10, 0xff9933);
+      const duration = 3000;
+      const startColor = 0xff9933;
+      const endColor = 0x22ea62;
+
+      const colorInterpolation = (colorA: number[] | Float32Array, colorB: number[] | Float32Array, t: number) => {
+        return [
+          colorA[0] + (colorB[0] - colorA[0]) * t,
+          colorA[1] + (colorB[1] - colorA[1]) * t,
+          colorA[2] + (colorB[2] - colorA[2]) * t,
+        ]
+      };
+      let start = Date.now();
+
+      const play = () => {
+        const t = (Date.now() - start) / duration;
+        if (t <= 1) {
+          circle.clear();
+          const color = colorInterpolation(PIXI.utils.hex2rgb(startColor), PIXI.utils.hex2rgb(endColor), t);
+          circle = drawCircle(circle.radius! + 0.1, PIXI.utils.rgb2hex(color));
+        }
+        // circle = drawCircle(circle.radius! + 1, circle.color!);
+
+      }
+
+      const state = play;
+
+      const gameLoop = () => {
+        requestAnimationFrame(gameLoop);
+        state();
+        this.renderer.render(this.stage);
+      }
+
+      gameLoop();
     }
   },
   mounted () {
     this.loadPixi();
-    this.renderTreasureHunterGameMovementExplorer();
+    this.nodeTransition();
     this.onWindowResize();
   }
 })
