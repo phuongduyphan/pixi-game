@@ -1,4 +1,4 @@
-MovingSpriteMovingSprite<template>
+<template>
   <div id="pixi-container">
   </div>
 </template>
@@ -14,6 +14,7 @@ import { rotateAroundPoint } from './rotateAroundPoint';
 import { Bump } from './bump';
 import { SpriteUtilities } from './spriteUtilities';
 import { Dust } from './dust';
+import { Charm } from './charm';
 
 export default defineComponent({
   name: 'App',
@@ -618,7 +619,7 @@ export default defineComponent({
         gameLoop();
       });
     },
-    renderTreasureHunterGameMovementExplorer () {
+    renderTreasureHunterGameFull () {
       this.loader.load((loader, resources) => {
         const b = new Bump(PIXI);
         // Game Scene
@@ -758,9 +759,11 @@ export default defineComponent({
         healthbar.outer = outerBar;
 
         // GameOver Scene
+        const c = new Charm(PIXI);
         const d = new Dust(PIXI);
         const gameOverScene = new PIXI.Container();
         this.stage.addChild(gameOverScene);
+        gameOverScene.x = gameScene.width;
         gameOverScene.visible = false;
 
         const message = new PIXI.Text('The End!', { fontFamily: 'Arial', fontSize: 48, fill: 'red' });
@@ -815,7 +818,7 @@ export default defineComponent({
                 uvs: true
               }
             );
-            stars.position.set(this.stage.width / 2 - stars.width / 2, this.stage.height / 2 - stars.height / 2);
+            stars.position.set(160, this.stage.height / 2 - 40);
             gameOverScene.addChild(stars);
 
             //Create star particles
@@ -850,12 +853,14 @@ export default defineComponent({
           requestAnimationFrame(gameLoop);
           state();
           d.update();
+          c.update();
           this.renderer.render(this.stage);
         }
 
         const end = () => {
-          gameScene.visible = false;
           gameOverScene.visible = true;
+          c.slide(gameOverScene, 0, 0);
+          c.slide(gameScene, -this.renderer.width, 0);
         };
 
         gameLoop();
@@ -1122,11 +1127,35 @@ export default defineComponent({
 
         gameLoop();
       });
+    },
+    tweenAndTransitions () {
+      this.loader.load((loader, resources) => {
+        const c = new Charm(PIXI);
+        const cat = new PIXI.Sprite(resources.cat.texture);
+        // cat.position.set(32, 32);
+        this.stage.addChild(cat);
+        c.slide(cat, 128, 128, 120, 'smoothstep', true);
+
+
+        const play = () => {
+        }
+
+        const state = play;
+
+        const gameLoop = () => {
+          requestAnimationFrame(gameLoop);
+          state();
+          c.update();
+          this.renderer.render(this.stage);
+        }
+
+        gameLoop();
+      });
     }
   },
   mounted () {
     this.loadPixi();
-    this.ropeMesh();
+    this.tweenAndTransitions();
     this.onWindowResize();
   }
 })
